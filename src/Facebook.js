@@ -124,8 +124,10 @@ const Facebook = () => {
             <br />
             <button onClick={() => getTokenInfo()}>Get Token info</button><br /><br />
             <h2>Page Access Flow</h2>
-            <button onClick={() => getLongLiveToken()}>1. Get Long Lived User Token</button><br /><br />
-            <button onClick={() => getPageAccessToken()}>2. Get Page Token</button><br /><br />
+            <h4>1. Login (already done if you are seeing this)</h4>
+            <button onClick={() => getLongLiveToken()}>2. Get Long Lived User Token</button><br /><br />
+            <button onClick={() => getPageAccessToken()}>3. Get Page Token</button><br />
+            <h4>4. Store page token in database for server use</h4><br />
             {/* <h2>Server Side Flow</h2> */}
             {/* <button onClick={() => getClientCode()}>Get Client Code</button><br /><br /> */}
           </div>
@@ -141,7 +143,7 @@ const Facebook = () => {
           />
         }
         <div>
-        <h2>Sample Graph API Queries</h2>
+        <h2>Sample Facebook Graph API Queries</h2>
           <button onClick={() => getName()}>Get Page Name</button><br /><br />
           <button onClick={() => getPosts()}>Get Page Posts</button><br /><br />
         </div>
