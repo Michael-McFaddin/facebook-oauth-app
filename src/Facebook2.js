@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
-import FacebookLogin from 'react-facebook-login';
+import FacebookLogin from 'react-facebook-login/dist/facebook-login-render-props'; // component that allows for custom styled button
 import axios from 'axios';
 
 // App scopes are requested in the FacebookLogin component props
 
-const Facebook = () => {
+const Facebook2 = () => {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState({});
   const [longLiveToken, setLongLiveToken] = useState('');
-  const [pageInfo, setPageInfo] = useState([]);
-  const [pageToken, setPageToken] = useState([]);
-  const [clientPageId, setClientPageId] = useState([]);
-  // const [clientCode, setClientCode] = useState([]);
+  const [pageTokenInfo, setPageTokenInfo] = useState({});
 
   const appId = ''; // this can be found in the App Dashboard
   const appSecret = ''; // app secret can be found in the app Dashboard/Setting/Basic
@@ -30,50 +27,49 @@ const Facebook = () => {
     console.log('token info', response);
   };
 
-  // Step 1, login user through facebook button
-  // take facebook login response and set resData
+  // All functionality in one callback from FacebookLogin component
   const responseFacebook = (response) => {
     if (response.status !== 'unknown') {
-      console.log('response',response);
+      console.log('response', response);
       setIsLoggedIn(true);
       setUserData({
         userName: response.name,
         userToken: response.accessToken,
         userId: response.id,
       });
+      
+      const getPageToken = async () => {
+        const longLiveRes = await axios({
+          url: `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${response.accessToken}`,
+          method: 'get',
+        });
+        setLongLiveToken(longLiveRes.data.access_token);
+        console.log('longLiveRes',longLiveRes);
+
+        const pageTokenRes = await axios({
+          url: `https://graph.facebook.com/v10.0/${response.id}/accounts?access_token=${longLiveRes.data.access_token}`,
+          method: 'get',
+        });
+
+        setPageTokenInfo({
+          pageInfo: [pageTokenRes.data],
+          pageId: pageTokenRes.data.data[0].id,
+          pageToken: pageTokenRes.data.data[0].access_token,
+        });  
+        console.log('pageTokenRes', pageTokenRes);
+      };
+      
+      getPageToken();
     }
   };
 
-   // onclick function that came with FacebookLogin component
-  const componentClicked = (response) => {
-    console.log('response', response);
-  };
-
-  // Step 2, exchange the short term user token for a long live token
-  const getLongLiveToken = async () => {
-    const response = await axios({
-      url: `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${userData.userToken}`,
-      method: 'get',
-    });
-    setLongLiveToken(response.data.access_token);
-    console.log('Long Live Token', response.data);
-  };
-
-  // Step 3, take the user id and longliveToken and request a page token
-  const getPageAccessToken = async () => {
-    const response = await axios({
-      url: `https://graph.facebook.com/v10.0/${userData.userId}/accounts?access_token=${longLiveToken}`,
-      method: 'get',
-    });
-    console.log('getPageAccessToken Res', response);
-    setPageInfo(response.data);
-    setClientPageId(response.data.data[0].id);
-    setPageToken(response.data.data[0].access_token);  
-  };
- 
-
-  // Step 4, Store the clientBmSuToken in a secure database and use it 
+  // Final steps, Store the clientBmSuToken in a secure database and use it 
   // for accessing APIs that require a page access token
+
+  // onclick function that came with FacebookLogin component
+  // const componentClicked = (response) => {
+  //   console.log('response', response);
+  // };
 
   //_______________________________________________________________________________________
 
@@ -93,7 +89,7 @@ const Facebook = () => {
   // facebook graph api query to get the page name
   const getName = async () => {
     const response = await axios({
-      url: `https://graph.facebook.com/${clientPageId}?fields=name&access_token=${pageToken}`,
+      url: `https://graph.facebook.com/${pageTokenInfo.pageId}?fields=name&access_token=${pageTokenInfo.pageToken}`,
       method: 'get',
     });
     console.log('page name query', response);
@@ -102,7 +98,7 @@ const Facebook = () => {
   // facebook graph api query to get the pages posts
   const getPosts = async () => {
     const response = await axios({
-      url: `https://graph.facebook.com/${clientPageId}/posts?access_token=${pageToken}`,
+      url: `https://graph.facebook.com/${pageTokenInfo.pageId}/posts?access_token=${pageTokenInfo.pageToken}`,
       method: 'get',
     });
     console.log('posts query', response);
@@ -110,36 +106,26 @@ const Facebook = () => {
 
   console.log('user data', userData);
   console.log('long live token', longLiveToken);
-  console.log('Page Info', pageInfo);
-  console.log('Page Id', clientPageId);
-  console.log('Page token', pageToken);
+  console.log('Page Token Info', pageTokenInfo);
 
   return(
     <div>
-      <h2>Facebook Login</h2>
+      <h2>Facebook Login 2</h2>
       <div>
         {isLoggedIn ? 
           <div>
-            Welcome {userData.name}
-            <br />
+            Welcome {userData.name}<br />
             <button onClick={() => getTokenInfo()}>Get Token info</button><br /><br />
-            <h2>Page Access Flow</h2>
-            <h4>1. Login (already done if you are seeing this)</h4>
-            <button onClick={() => getLongLiveToken()}>2. Get Long Lived User Token</button><br /><br />
-            <button onClick={() => getPageAccessToken()}>3. Get Page Token</button><br />
-            <h4>4. Store page token in database for server use</h4><br />
-            {/* <h2>Server Side Flow</h2> */}
-            {/* <button onClick={() => getClientCode()}>Get Client Code</button><br /><br /> */}
           </div>
           :
           <FacebookLogin 
             appId={appId}
             autoLoad={false}
-            fields="name,email,picture"
-            // scope="read_insights,pages_show_list,pages_read_engagement,pages_read_user_content,pages_manage_ads,public_profile"
             scope="read_insights,pages_show_list,pages_read_engagement,pages_read_user_content,public_profile" // tried on second test user
-            onClick={componentClicked}
             callback={responseFacebook}
+            render={renderProps => (
+              <button onClick={renderProps.onClick}>Login With Facebook</button>
+            )}
           />
         }
         <div>
@@ -152,4 +138,4 @@ const Facebook = () => {
   );
 };
 
-export default Facebook;
+export default Facebook2;
