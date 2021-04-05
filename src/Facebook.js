@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import FacebookLogin from 'react-facebook-login';
 import axios from 'axios';
 
+// Import environment variables
+import {APP_ID, APP_TOKEN, APP_SECRET} from './env.json';
+
 // App scopes are requested in the FacebookLogin component props
 
 const Facebook = () => {
@@ -14,17 +17,17 @@ const Facebook = () => {
   const [clientPageId, setClientPageId] = useState([]);
   // const [clientCode, setClientCode] = useState([]);
 
-  const appId = ''; // this can be found in the App Dashboard
-  const appSecret = ''; // app secret can be found in the app Dashboard/Setting/Basic
+  // const appId = ''; // this can be found in the App Dashboard
+  // const appSecret = ''; // app secret can be found in the app Dashboard/Setting/Basic
   // const redirectUri = 'http%3A%2F%2Flocalhost%3A3000%2F'; // this may be needed for future requests, 
   //set can be set in the App Dashboard/Products/Facebook Login/Settings/Valid OAuth Redirect URIs
-  const appToken = ''; // this is only really needed for checking the token info so far
+  // const appToken = ''; // this is only really needed for checking the token info so far
   // app token can be found here in when logged into your developer account https://developers.facebook.com/tools/accesstoken/
 
   // gets info on any tokens
   const getTokenInfo = async () => {
     const response = await axios({
-      url: `https://graph.facebook.com/debug_token?input_token=${userData.userToken}&access_token=${appToken}`,
+      url: `https://graph.facebook.com/debug_token?input_token=${userData.userToken}&access_token=${APP_TOKEN}`,
       method: 'get',
     });
     console.log('token info', response);
@@ -52,7 +55,7 @@ const Facebook = () => {
   // Step 2, exchange the short term user token for a long live token
   const getLongLiveToken = async () => {
     const response = await axios({
-      url: `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${userData.userToken}`,
+      url: `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${APP_ID}&client_secret=${APP_SECRET}&fb_exchange_token=${userData.userToken}`,
       method: 'get',
     });
     setLongLiveToken(response.data.access_token);
@@ -133,11 +136,11 @@ const Facebook = () => {
           </div>
           :
           <FacebookLogin 
-            appId={appId}
+            appId={APP_ID}
             autoLoad={false}
             fields="name,email,picture"
             // scope="read_insights,pages_show_list,pages_read_engagement,pages_read_user_content,pages_manage_ads,public_profile"
-            scope="read_insights,pages_show_list,pages_read_engagement,pages_read_user_content,public_profile" // tried on second test user
+            scope="read_insights,pages_show_list,pages_read_engagement,pages_read_user_content,public_profile" // tried on second test user removed pages_manage_ads
             onClick={componentClicked}
             callback={responseFacebook}
           />
